@@ -1,84 +1,92 @@
-/* General Styles */
+/* General Styling */
 .ion-padding {
-    padding: 16px;
-  }
-  
+  padding: 16px;
+}
+
+/* Video container styles */
+.video-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50vh;
+  background-color: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Recording indicator */
+.recording-indicator {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  background-color: rgba(255, 0, 0, 0.8);
+  padding: 8px 16px;
+  border-radius: 25px;
+  color: #fff;
+  font-weight: bold;
+  font-size: 14px;
+  z-index: 10;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Controls container */
+.controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+ion-button {
+  --border-radius: 50%;
+  --background: #007bff;
+  --color: white;
+  width: 70px;
+  height: 70px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Recorded videos section */
+.recorded-videos {
+  margin-top: 30px;
+}
+
+.video-item {
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.video-item video {
+  border-bottom: 2px solid #007bff;
+}
+
+/* Media queries */
+@media (max-width: 768px) {
   .video-container {
-    position: relative; /* Positioning context for recording indicator */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 60vh; /* Adjusted height for better responsiveness */
-    background-color: #000; /* Darker background for video */
-    border-radius: 12px; /* Rounded corners for video container */
-    overflow: hidden; /* Ensure video doesn't overflow container */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Add shadow for depth */
+    height: 40vh;
   }
-  
-  video {
-    width: 100%;
-    height: 100%; /* Ensure video fills container */
-    object-fit: cover; /* Maintain aspect ratio without stretching */
-  }
-  
-  /* Styles for recording indicator */
-  .recording-indicator {
-    position: absolute; /* Positioned relative to the video container */
-    top: 16px;
-    left: 16px;
-    display: flex;
-    align-items: center;
-    background-color: rgba(255, 0, 0, 0.9);
-    padding: 8px 16px;
-    border-radius: 25px;
-    color: #fff;
-    font-weight: bold;
-    font-size: 16px;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); /* Enhanced shadow for better visibility */
-    z-index: 10; /* Ensure it stays on top of other elements */
-  }
-  
-  /* Styles for buttons */
+
   ion-button {
-    --border-radius: 12px;
-    --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    --background: #007bff; /* Primary button color */
-    --color: #fff; /* Text color for buttons */
-    --padding-start: 18px; /* Increased padding for a more spacious look */
-    --padding-end: 18px;
-    --margin-bottom: 12px; /* Space between buttons */
+    width: 60px;
+    height: 60px;
   }
-  
-  ion-button[disabled] {
-    --background: #ccc; /* Background color for disabled state */
-    --color: #666; /* Text color for disabled state */
-    --box-shadow: none; /* Remove shadow for disabled buttons */
+
+  .recording-indicator {
+    top: 10px;
+    left: 10px;
+    font-size: 12px;
   }
-  
-  /* Styles for recorded videos list */
-  .recorded-videos {
-    margin-top: 20px;
-  }
-  
-  .video-item {
-    margin-bottom: 20px;
-  }
-  
-  /* Media Queries for Responsiveness */
-  @media (max-width: 768px) {
-    .video-container {
-      height: 50vh; /* Adjust height for smaller screens */
-    }
-  
-    ion-button {
-      width: 100%; /* Make buttons full-width on smaller screens */
-      margin-bottom: 10px; /* Space between buttons */
-    }
-  
-    .recording-indicator {
-      top: 10px; /* Adjust position for smaller screens */
-      left: 10px;
-      font-size: 14px; /* Smaller font size for smaller screens */
-    }
-  }
-  
+}

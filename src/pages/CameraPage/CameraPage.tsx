@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButton } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButton, IonIcon } from '@ionic/react';
+import { cameraOutline, closeOutline, videocamOutline, stopOutline, downloadOutline, openOutline } from 'ionicons/icons';
 import './CameraPage.css';
 
 const CameraPage: React.FC = () => {
@@ -10,24 +11,21 @@ const CameraPage: React.FC = () => {
   const [timer, setTimer] = useState(0);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-  const [recordedVideos, setRecordedVideos] = useState<{url: string, blob: Blob}[]>([]);
+  const [recordedVideos, setRecordedVideos] = useState<{ url: string, blob: Blob }[]>([]);
 
   const startStopCamera = async () => {
     if (cameraStream) {
-      // Stop the current camera stream
       cameraStream.getTracks().forEach(track => track.stop());
       setCameraStream(null);
       setIsRecording(false);
       setRecordedChunks([]);
-      setRecordedVideos([]);
     } else {
-      // Start a new camera stream
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
-            videoRef.current.play(); // Ensure the video starts playing
+            videoRef.current.play();
           }
           setCameraStream(stream);
           mediaRecorderRef.current = new MediaRecorder(stream);
@@ -67,7 +65,6 @@ const CameraPage: React.FC = () => {
   const saveVideo = () => {
     const blob = new Blob(recordedChunks, { type: 'video/mp4' });
     const url = window.URL.createObjectURL(blob);
-
     setRecordedVideos(prev => [...prev, { url, blob }]);
 
     const a = document.createElement('a');
@@ -76,13 +73,12 @@ const CameraPage: React.FC = () => {
     a.download = `video_${new Date().getTime()}.mp4`;
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a); // Clean up the link element
+    document.body.removeChild(a);
 
-    // Optionally, revoke the object URL to free memory
     setTimeout(() => {
       window.URL.revokeObjectURL(url);
     }, 1000);
-    
+
     alert('Video saved!');
   };
 
@@ -108,22 +104,31 @@ const CameraPage: React.FC = () => {
             </div>
           )}
         </div>
-        <IonButton expand="full" onClick={startStopCamera}>
-          {cameraStream ? 'Stop Camera' : 'Start Camera'}
-        </IonButton>
-        {cameraStream && (
-          <>
-            <IonButton expand="full" onClick={toggleRecording}>
-              {isRecording ? 'Stop Recording' : 'Start Recording'}
-            </IonButton>
-            <IonButton expand="full" onClick={saveVideo}>Save Video</IonButton>
-          </>
-        )}
+        <div className="controls">
+          <IonButton onClick={startStopCamera} color="primary" shape="round" size="large">
+            <IonIcon icon={cameraStream ? closeOutline : cameraOutline} />
+          </IonButton>
+          {cameraStream && (
+            <>
+              <IonButton onClick={toggleRecording} color={isRecording ? 'danger' : 'success'} shape="round" size="large">
+                <IonIcon icon={isRecording ? stopOutline : videocamOutline} />
+              </IonButton>
+              {recordedChunks.length > 0 && (
+                <IonButton onClick={saveVideo} color="tertiary" shape="round" size="large">
+                  <IonIcon icon={downloadOutline} />
+                </IonButton>
+              )}
+            </>
+          )}
+        </div>
         <div className="recorded-videos">
+          {recordedVideos.length > 0 && <h3>Recorded Videos:</h3>}
           {recordedVideos.map((video, index) => (
             <div key={index} className="video-item">
               <video src={video.url} controls width="100%" />
-              <IonButton expand="full" onClick={() => window.open(video.url)}>Open in new tab</IonButton>
+              <IonButton expand="full" onClick={() => window.open(video.url)}>
+              <IonIcon icon={openOutline} />
+              </IonButton>
             </div>
           ))}
         </div>

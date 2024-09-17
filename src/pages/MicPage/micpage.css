@@ -1,0 +1,80 @@
+/* Container styling */
+#container {
+    position: relative;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+  }
+  
+  /* Mic container to hold the buttons */
+  .mic-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  /* Styling for microphone and stop buttons */
+  .mic-button {
+    background-color: #28a745;
+    border: none;
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s ease;
+  }
+  
+  /* Hover effect for microphone button */
+  .mic-button:hover {
+    background-color: #218838;
+  }
+  
+  /* Styling for stop button */
+  .mic-button.stop {
+    background-color: #dc3545;
+  }
+  
+  /* Hover effect for stop button */
+  .mic-button.stop:hover {
+    background-color: #c82333;
+  }
+  
+  /* Timer styling */
+  .timer {
+    margin-top: 10px;
+    font-size: 1.2rem;
+    color: #333;
+  }
+  
+  /* Audio controls container */
+  .audio-controls {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  /* Styling for download button */
+  .download {
+    background-color: #007bff;
+    color: #fff;
+    border-radius: 5px;
+    padding: 10px 20px;
+    cursor: pointer;
+    margin-top: 10px;
+    border: none;
+  }
+  
+  .download:hover {
+    background-color: #0056b3;
+  }
+  

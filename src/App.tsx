@@ -33,6 +33,7 @@ import '@ionic/react/css/palettes/dark.system.css';
 
 /* Theme variables */
 import './theme/variables.css';
+import Mic from './pages/MicPage/micpage';
 
 setupIonicReact();
 
@@ -42,6 +43,7 @@ const App: React.FC = () => (
       <IonRouterOutlet>
         <Route exact path="/home"><Home /></Route>
         <Route exact path="/camera" component={CameraPage} />
+        <Route exact path="/mic" component={Mic} />
         <Route exact path="/"><Redirect to="/home" /></Route>
       </IonRouterOutlet>
     </IonReactRouter>
