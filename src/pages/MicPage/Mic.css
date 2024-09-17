@@ -1,71 +1,18 @@
-#container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-  }
-  
-  .mic-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-  
-  .mic-button {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    background-color: #007bff;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: background-color 0.3s;
-  }
-  
-  .mic-button:hover {
-    background-color: #0056b3;
-  }
-  
-  .mic-button.stop {
-    background-color: #dc3545;
-  }
-  
-  .mic-button.stop:hover {
-    background-color: #a71d2a;
-  }
-  
-  .timer {
-    font-size: 1.2em;
-    margin-bottom: 20px;
-  }
-  
-  .audio-controls {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .audio-controls audio {
-    margin-bottom: 10px;
-  }
-  
-  .download {
-    background-color: #28a745;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    transition: background-color 0.3s;
-  }
-  
-  .download:hover {
-    background-color: #218838;
-  }
+.text-output {
+  margin-top: 20px;
+  text-align: left;
+}
+
+.transcription, .translation {
+  margin-bottom: 15px;
+}
+
+.transcription h3, .translation h3 {
+  font-size: 18px;
+  margin-bottom: 5px;
+}
+
+.transcription p, .translation p {
+  font-size: 16px;
+  line-height: 1.4;
+}

@@ -1,28 +1,70 @@
 import React, { useState, useEffect } from 'react';
-import { IonContent, IonPage } from '@ionic/react';
+import { IonContent, IonPage, IonText } from '@ionic/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMicrophone, faStop, faDownload } from '@fortawesome/free-solid-svg-icons';
+import { faMicrophone, faStop } from '@fortawesome/free-solid-svg-icons';
 import { VoiceRecorder } from 'capacitor-voice-recorder';
-import { Filesystem, Directory } from '@capacitor/filesystem';
-import './Mic.css'; // We'll create this CSS file
+import { SpeechRecognition } from '@capacitor-community/speech-recognition';
+import './Mic.css';
+
+// Mock translation function
+const mockTranslate = (text: string): Promise<string> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      // This is a very simplistic mock translation
+      const translated = text.split('').reverse().join('');
+      resolve(translated);
+    }, 500); // Simulate network delay
+  });
+};
 
 const Mic: React.FC = () => {
-  const [isRecording, setIsRecording] = useState(false);
+  const [isActive, setIsActive] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [recordingTime, setRecordingTime] = useState(0);
+  const [activeTime, setActiveTime] = useState(0);
+  const [transcription, setTranscription] = useState('');
+  const [translation, setTranslation] = useState('');
+  const [mode, setMode] = useState<'record' | 'transcribe'>('record');
+  const [status, setStatus] = useState('');
 
   useEffect(() => {
     let interval: number;
-    if (isRecording) {
+    if (isActive) {
       interval = setInterval(() => {
-        setRecordingTime((prevTime) => prevTime + 1);
+        setActiveTime((prevTime) => prevTime + 1);
       }, 1000);
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isRecording]);
+  }, [isActive]);
+
+  useEffect(() => {
+    checkPermissions();
+    SpeechRecognition.addListener('speechRecognitionPartialResults', (result) => {
+      console.log('Partial result:', result);
+      setTranscription(result.matches[0]);
+    });
+    return () => {
+      SpeechRecognition.removeAllListeners();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (transcription) {
+      console.log('Transcription updated:', transcription);
+      translateText(transcription);
+    }
+  }, [transcription]);
+
+  const checkPermissions = async () => {
+    const { available } = await SpeechRecognition.available();
+    if (available) {
+      const { state } = await SpeechRecognition.hasPermission();
+      if (state !== 'granted') {
+        await SpeechRecognition.requestPermission();
+      }
+    }
+  };
 
   const formatTime = (timeInSeconds: number) => {
     const minutes = Math.floor(timeInSeconds / 60);
@@ -30,31 +72,79 @@ const Mic: React.FC = () => {
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   };
 
-  const handleStartRecording = async () => {
+  const toggleFunction = async () => {
+    if (isActive) {
+      if (mode === 'record') {
+        await stopRecording();
+      } else {
+        await stopSpeechRecognition();
+      }
+      setIsActive(false);
+      setStatus('Stopped');
+    } else {
+      setAudioUrl(null);
+      setTranscription('');
+      setTranslation('');
+      setActiveTime(0);
+      if (mode === 'record') {
+        await startRecording();
+      } else {
+        await startSpeechRecognition();
+      }
+      setIsActive(true);
+      setStatus(mode === 'record' ? 'Recording' : 'Listening');
+    }
+  };
+
+  const startRecording = async () => {
     try {
       await VoiceRecorder.requestAudioRecordingPermission();
       await VoiceRecorder.startRecording();
-      setIsRecording(true);
-      setRecordingTime(0);
-      setAudioUrl(null);
-      setAudioBlob(null);
+      setStatus('Recording started');
     } catch (error) {
       console.error('Error starting recording:', error);
+      setStatus('Error starting recording');
       alert('Microphone access is required to record audio.');
     }
   };
 
-  const handleStopRecording = async () => {
+  const stopRecording = async () => {
     try {
       const result = await VoiceRecorder.stopRecording();
-      setIsRecording(false);
       const base64Sound = result.value.recordDataBase64;
       const audioBlob = base64ToBlob(base64Sound, 'audio/wav');
       const url = URL.createObjectURL(audioBlob);
       setAudioUrl(url);
-      setAudioBlob(audioBlob);
+      setStatus('Recording stopped');
     } catch (error) {
       console.error('Error stopping recording:', error);
+      setStatus('Error stopping recording');
+    }
+  };
+
+  const startSpeechRecognition = async () => {
+    try {
+      await SpeechRecognition.start({
+        language: 'en-US',
+        maxResults: 2,
+        prompt: 'Say something',
+        partialResults: true,
+        popup: false,
+      });
+      setStatus('Speech recognition started');
+    } catch (error) {
+      console.error('Error starting speech recognition:', error);
+      setStatus('Error starting speech recognition');
+    }
+  };
+
+  const stopSpeechRecognition = async () => {
+    try {
+      await SpeechRecognition.stop();
+      setStatus('Speech recognition stopped');
+    } catch (error) {
+      console.error('Error stopping speech recognition:', error);
+      setStatus('Error stopping speech recognition');
     }
   };
 
@@ -68,62 +158,72 @@ const Mic: React.FC = () => {
     return new Blob([bytes], { type: type });
   };
 
-  const handleDownload = async () => {
-    if (audioBlob) {
-      try {
-        const fileName = `recording_${new Date().getTime()}.wav`;
-        const base64Data = await blobToBase64(audioBlob);
-        await Filesystem.writeFile({
-          path: fileName,
-          data: base64Data,
-          directory: Directory.Documents
-        });
-        console.log('File saved:', fileName);
-      } catch (error) {
-        console.error('Error saving file:', error);
-      }
+  const translateText = async (text: string) => {
+    try {
+      const translatedText = await mockTranslate(text);
+      setTranslation(translatedText);
+      console.log('Translation updated:', translatedText);
+    } catch (error) {
+      console.error('Error translating text:', error);
+      setStatus('Error translating text');
     }
-  };
-
-  const blobToBase64 = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
   };
 
   return (
     <IonPage>
       <IonContent className="ion-padding">
         <div id="container">
-          <div className="mic-container">
-            {!isRecording ? (
-              <button onClick={handleStartRecording} className="mic-button">
-                <FontAwesomeIcon icon={faMicrophone} size="2x" color="#fff" />
-              </button>
-            ) : (
-              <button onClick={handleStopRecording} className="mic-button stop">
-                <FontAwesomeIcon icon={faStop} size="2x" color="#fff" />
-              </button>
-            )}
+          <div className="mode-toggle">
+            <button 
+              onClick={() => setMode('record')} 
+              className={mode === 'record' ? 'active' : ''}
+            >
+              Record Audio
+            </button>
+            <button 
+              onClick={() => setMode('transcribe')} 
+              className={mode === 'transcribe' ? 'active' : ''}
+            >
+              Speech to Text
+            </button>
           </div>
 
-          {isRecording && (
+          <div className="mic-container">
+            <button onClick={toggleFunction} className={`mic-button ${isActive ? 'stop' : ''}`}>
+              <FontAwesomeIcon icon={isActive ? faStop : faMicrophone} size="2x" color="#fff" />
+            </button>
+          </div>
+
+          <IonText color="medium">
+            <p>{status}</p>
+          </IonText>
+
+          {isActive && (
             <div className="timer">
-              Recording: {formatTime(recordingTime)}
+              {mode === 'record' ? 'Recording' : 'Listening'}: {formatTime(activeTime)}
             </div>
           )}
 
-          {audioUrl && (
+          {mode === 'record' && audioUrl && (
             <div className="audio-controls">
               <audio controls src={audioUrl}></audio>
-              <button className="download" onClick={handleDownload}>
-                <FontAwesomeIcon icon={faDownload} /> Download
-              </button>
             </div>
           )}
+
+          <div className="text-output">
+            {transcription && (
+              <div className="transcription">
+                <h3>Transcription:</h3>
+                <p>{transcription}</p>
+              </div>
+            )}
+            {translation && (
+              <div className="translation">
+                <h3>Translation:</h3>
+                <p>{translation}</p>
+              </div>
+            )}
+          </div>
         </div>
       </IonContent>
     </IonPage>

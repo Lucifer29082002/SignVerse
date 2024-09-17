@@ -7,6 +7,9 @@ const config: CapacitorConfig = {
   plugins: {
     Filesystem: {
       androidScheme: "content"
+    },
+    "SpeechRecognition": {
+      "androidSpeechRecognizer": true
     }
   }
 };
