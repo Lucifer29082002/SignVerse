@@ -1,0 +1,7 @@
+{
+  "name": "SignVerse",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}
