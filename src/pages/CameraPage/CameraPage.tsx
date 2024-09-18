@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/react';
+import './CameraPage.css';
 
 declare global {
   interface Window {
@@ -28,7 +29,7 @@ const PoseDetection: React.FC = () => {
       await import('@mediapipe/pose');
       await import('@mediapipe/drawing_utils');
       await import('@mediapipe/camera_utils');
-      
+
       const { Pose } = window;
       const { Camera } = window;
       const { drawConnectors, drawLandmarks } = window;
@@ -60,7 +61,7 @@ const PoseDetection: React.FC = () => {
         const camera = new Camera(videoRef.current, {
           onFrame: async () => {
             if (videoRef.current) {
-              await pose.send({image: videoRef.current});
+              await pose.send({ image: videoRef.current });
             }
           },
           width: 1280,
@@ -90,28 +91,34 @@ const PoseDetection: React.FC = () => {
 
       if (results.poseLandmarks) {
         window.drawConnectors(canvasCtx, results.poseLandmarks, window.Pose.POSE_CONNECTIONS,
-                       {color: '#00FF00', lineWidth: 4});
+          { color: '#00FF00', lineWidth: 4 });
         window.drawLandmarks(canvasCtx, results.poseLandmarks,
-                      {color: '#FF0000', lineWidth: 2});
+          { color: '#FF0000', lineWidth: 2 });
       }
       canvasCtx.restore();
     }
   };
 
   return (
-    <IonPage>
+    <IonPage className="pose-detection-page">
       <IonHeader>
         <IonToolbar>
           <IonTitle>Pose Detection</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent fullscreen>
+      <IonContent fullscreen className="pose-detection-content">
         {isLoading && <div>Loading...</div>}
-        <video ref={videoRef} style={{display: 'none'}}></video>
-        <canvas ref={canvasRef} width="1280" height="1400" style={{maxWidth: '100%', height: 'auto'}}></canvas>
+        <video ref={videoRef} style={{ display: 'none' }}></video>
+        <canvas
+          ref={canvasRef}
+          width="1280"
+          height="1400"
+          style={{ maxWidth: '100%', height: 'auto' }}
+        ></canvas>
       </IonContent>
     </IonPage>
   );
+
 };
 
 export default PoseDetection;

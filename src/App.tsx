@@ -68,10 +68,13 @@ const App: React.FC = () => {
         </div>
 
         {/* Camera Modal */}
-        <IonModal isOpen={isCameraOpen} onDidDismiss={() => setIsCameraOpen(false)}>
-          <CameraPage />
-          <FontAwesomeIcon className="close-icon" icon={faTimes} onClick={() => setIsCameraOpen(false)} />
-        </IonModal>
+        <IonModal isOpen={isCameraOpen} onDidDismiss={() => setIsCameraOpen(false)} className="ion-modal-custom">
+  <div className="camera-modal-content">
+    <CameraPage />
+    <FontAwesomeIcon className="close-icon" icon={faTimes} onClick={() => setIsCameraOpen(false)} />
+  </div>
+</IonModal>
+
 
         {/* Mic Modal */}
         <IonModal isOpen={isMicOpen} onDidDismiss={() => setIsMicOpen(false)}>

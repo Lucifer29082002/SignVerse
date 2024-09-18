@@ -1,92 +1,12 @@
-/* General Styling */
-.ion-padding {
-  padding: 16px;
-}
-
-/* Video container styles */
-.video-container {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 50vh;
-  background-color: #000;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-}
-
-video {
-  width: 100%;
+.pose-detection-page {
+  background-color: #2E3B55; /* Replace with your desired color */
   height: 100%;
-  object-fit: cover;
 }
 
-/* Recording indicator */
-.recording-indicator {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  display: flex;
-  align-items: center;
-  background-color: rgba(255, 0, 0, 0.8);
-  padding: 8px 16px;
-  border-radius: 25px;
-  color: #fff;
-  font-weight: bold;
-  font-size: 14px;
-  z-index: 10;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+.pose-detection-content {
+  --background: #2E3B55; /* Set the background for IonContent */
+}
+.pose-detection-page .ion-toolbar {
+  background-color: #2E3B55 !important;
 }
 
-/* Controls container */
-.controls {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 20px;
-  margin-top: 20px;
-}
-
-ion-button {
-  --border-radius: 50%;
-  --background: #007bff;
-  --color: white;
-  width: 70px;
-  height: 70px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-/* Recorded videos section */
-.recorded-videos {
-  margin-top: 30px;
-}
-
-.video-item {
-  margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.video-item video {
-  border-bottom: 2px solid #007bff;
-}
-
-/* Media queries */
-@media (max-width: 768px) {
-  .video-container {
-    height: 40vh;
-  }
-
-  ion-button {
-    width: 60px;
-    height: 60px;
-  }
-
-  .recording-indicator {
-    top: 10px;
-    left: 10px;
-    font-size: 12px;
-  }
-}
