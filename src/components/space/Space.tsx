@@ -22,7 +22,7 @@ async function copyModelToDataDirectory() {
             }
             return response.arrayBuffer();
           });
-        
+
         await Filesystem.writeFile({
           path: 'newModel.glb',
           data: modelData,
@@ -166,24 +166,34 @@ const SignLanguageAnimator: React.FC<SignLanguageAnimatorProps> = ({ inputSenten
       <IonHeader>
       </IonHeader>
       <IonContent fullscreen>
-        <div style={{ padding: '50px', textAlign: 'center' }}>
+        <div style={{
+          padding: '10px 50px',
+          textAlign: 'center',
+          backgroundColor: '#2E3B55', /* Matching the background color of the input box */
+          boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', /* Matching the box shadow */
+          color: '#f8f8ff', /* Matching the text color of the input box */
+          fontFamily: 'monospace',
+          fontSize: '15px',
+        }}>
+          <h1>Sign Verse</h1>
           <div>Current Animation: {currentAnimation || 'None'}</div>
         </div>
+
         <div style={{ width: '100%', height: '80%' }}>
           {error ? (
             <div>{error}</div>
           ) : modelUrl ? (
             <Canvas
               onCreated={({ gl, scene }) => {
-                scene.background = new THREE.Color('#D1E9F6');
-                gl.setClearColor('#D1E9F6', 1);
+                scene.background = new THREE.Color('#2E3B55');
+                gl.setClearColor('#2E3B55', 1);
               }}
             >
               <PerspectiveCamera makeDefault position={[0, 1, 3]} fov={40} />
-              
+
               {/* Ambient light for overall illumination */}
               <ambientLight intensity={0.6} />
-              
+
               {/* Main directional light (simulating sunlight) */}
               <directionalLight
                 position={[5, 5, 5]}
@@ -192,17 +202,17 @@ const SignLanguageAnimator: React.FC<SignLanguageAnimatorProps> = ({ inputSenten
                 shadow-mapSize-width={1024}
                 shadow-mapSize-height={1024}
               />
-              
+
               {/* Fill light from the opposite side */}
               <directionalLight
                 position={[-5, 3, -5]}
                 intensity={0.4}
                 color="#9090ff"
               />
-              
+
               {/* Soft light from below for subtle highlights */}
               <pointLight position={[0, -3, 0]} intensity={0.2} color="#ffcc77" />
-              
+
               {/* Additional point lights for dynamic lighting */}
               <pointLight position={[3, 2, 1]} intensity={0.3} color="#ffffff" />
               <pointLight position={[-3, 2, 1]} intensity={0.3} color="#ffffff" />
@@ -210,7 +220,7 @@ const SignLanguageAnimator: React.FC<SignLanguageAnimatorProps> = ({ inputSenten
               <Suspense fallback={null}>
                 <Model url={modelUrl} animationName={currentAnimation || undefined} onAnimationComplete={handleAnimationComplete} />
               </Suspense>
-              <OrbitControls 
+              <OrbitControls
                 enablePan={false}
                 minPolarAngle={Math.PI / 4}
                 maxPolarAngle={Math.PI / 2}

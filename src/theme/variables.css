@@ -1,82 +1,70 @@
 .bottom-input-box {
-    position: fixed;
-    bottom: 20px; /* Lifted 20px from the bottom */
-    left: 12px;   /* Spacing from the left */
-    right: 12px;  /* Spacing from the right */
-    display: flex;
-    align-items: center;
-    justify-content: center; /* Center elements horizontally */
-    background-color: #ffffff; /* Clean white background for better contrast */
-    padding: 0px 10px;
-    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1); /* Slightly stronger shadow */
-    border-radius: 25px; /* More rounded corners */
-    overflow: hidden; /* Ensure no overflow */
-    z-index: 10; /* Ensure it's above other content */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #778899;
+  box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 25px 25px 0px 0px;
+  padding: 10px 10px;
+  z-index: 10;
+}
+
+/* If specific to a component */
+.custom-button {
+  --background: #a9adb1; /* Replace with your desired background color */
 }
 
 .bottom-input-box input {
-    flex-grow: 1;
-    padding: 12px 5px; /* Increased padding for better touch */
-    border-radius: 20px;
-    border: 1px solid #dcdcdc;
-    box-shadow: inset 0px 2px 4px rgba(0, 0, 0, 0.1); /* Subtle inner shadow */
-    font-size: 18px; /* Increased font size for better readability */
+  flex-grow: 1;
+  padding: 12px 5px;
+  border-radius: 20px;
+  border: none;
+  font-size: 18px;
+  color: #f8f8ff;
+  background-color: #778899;
+  box-shadow: inset 0px 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
 }
 
-.bottom-input-box ion-button {
-    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.2); /* Slightly stronger shadow for buttons */
-    padding: 5px; /* Consistent padding for all buttons */
-    margin: 0 4px; /* Space between buttons */
-    border-radius: 50%;
-
+.bottom-input-box input::placeholder {
+  color: #000000;
+  opacity: 1;
 }
 
-.bottom-input-box ion-button ion-icon {
-    font-size: 20px; /* Adjust font size to fit within button */
-    color: #ffffff;
-
+.bottom-input-box input:focus {
+  outline: none;
+  box-shadow: 0px 0px 1px 1px #b8b7b7, inset 0px 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Arrow button styling */
-.submit-button {
-    margin-left: 10px; /* Space between the input and submit button */
+.bottom-input-box .submit-button,
+.bottom-input-box .camera-button {
+  background-color: #007bff; /* Adjust background color as needed */
+  border-radius: 50%;
+  padding: 10px;
 }
 
-/* Camera and Mic icon positioning */
-.icon-container {
-    position: absolute;
-    bottom: 10px; /* Space above the bottom input box */
-    display: flex;
-    justify-content: space-between;
-    width: calc(100% - 30px); /* Full width minus padding */
-    left: 15px; /* Align with input box padding */
+.bottom-input-box .submit-button {
+  margin-left: 10px;
 }
 
-.camera-icon-container {
-    position: absolute;
-    bottom: 80px; /* Space above the bottom input box */
-    left: 15px;   /* Align with input box padding */
+.bottom-input-box .camera-button {
+  margin-left: 10px;
 }
 
-.mic-icon-container {
-    position: absolute;
-    bottom: 80px; /* Space above the bottom input box */
-    right: 15px;  /* Align with input box padding */
+.bottom-input-box .submit-button .fa-paper-plane,
+.bottom-input-box .camera-button .fa-camera {
+  color: #ffffff;
 }
 
-/* Modal styling */
-.ion-modal {
-    border-radius: 20px; /* Rounded corners for modals */
-    overflow: hidden;
-    box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.2);
-}
-
-/* Close button icon styling */
 .close-icon {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    font-size: 22px; /* Slightly larger for better visibility */
-    color: #fff;
-    cursor: pointer;
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  font-size: 22px;
+  color: #dc143c;
+  cursor: pointer;
 }

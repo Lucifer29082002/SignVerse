@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { IonApp, IonContent, IonModal, IonButton, IonIcon } from '@ionic/react';
-import { cameraOutline, micOutline, closeOutline, sendOutline } from 'ionicons/icons'; // Import send icon
+import { IonApp, IonContent, IonModal, IonButton } from '@ionic/react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCamera, faMicrophone, faTimes, faPaperPlane } from '@fortawesome/free-solid-svg-icons';
 import Home from './pages/Home';
 import CameraPage from './pages/CameraPage/CameraPage';
-import MicPage from './pages/MicPage/micpage';
+import SpeechRecognitionUI from './pages/MicPage/micpage';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -23,7 +24,6 @@ import './theme/variables.css';
 
 /* Import setupIonicReact */
 import { setupIonicReact } from '@ionic/react';
-import SpeechRecognitionUI from './pages/MicPage/micpage';
 
 setupIonicReact(); // Initialize Ionic React
 
@@ -34,53 +34,49 @@ const App: React.FC = () => {
   const [realInput, setRealInput] = useState('');
 
   const handleSubmit = () => {
-    setRealInput(input)
-  }
+    setRealInput(input);
+  };
 
   return (
     <IonApp>
       <IonContent>
-        <Home realInput = {realInput}/>
+        <Home realInput={realInput} />
 
         {/* Placeholder for the model with an image */}
         <div className="model-placeholder">
           <img src="https://via.placeholder.com/150" alt="Model Placeholder" />
         </div>
 
-        {/* Icon Containers */}
-        <div className="icon-container">
-          <div className="camera-icon-container">
-            <IonButton onClick={() => setIsCameraOpen(true)}>
-              <IonIcon icon={cameraOutline} />
-            </IonButton>
-          </div>
-         { /*<div className="mic-icon-container">
-            <IonButton onClick={() => setIsMicOpen(true)}>
-              <IonIcon icon={micOutline} />
-            </IonButton>
-          </div>*/}
-        </div>
-
         {/* Bottom Input Box */}
         <div className="bottom-input-box">
-          <input type="text" placeholder="Enter text here..." onChange={(ev)=>setInput(ev.target.value)}/>
-          
+          <input
+            type="text"
+            placeholder="Enter text here..."
+            onChange={(ev) => setInput(ev.target.value)}
+          />
+
           {/* Arrow Button */}
-          <IonButton className="submit-button" onClick={handleSubmit}>
-            <IonIcon icon={sendOutline}/>
+          <IonButton className="custom-button" onClick={handleSubmit}>
+  <FontAwesomeIcon icon={faPaperPlane} />
+</IonButton>
+
+
+          {/* Camera Button */}
+          <IonButton className="custom-button" onClick={() => setIsCameraOpen(true)}>
+            <FontAwesomeIcon icon={faCamera} />
           </IonButton>
         </div>
 
         {/* Camera Modal */}
         <IonModal isOpen={isCameraOpen} onDidDismiss={() => setIsCameraOpen(false)}>
           <CameraPage />
-          <IonIcon className="close-icon" icon={closeOutline} onClick={() => setIsCameraOpen(false)} />
+          <FontAwesomeIcon className="close-icon" icon={faTimes} onClick={() => setIsCameraOpen(false)} />
         </IonModal>
 
         {/* Mic Modal */}
         <IonModal isOpen={isMicOpen} onDidDismiss={() => setIsMicOpen(false)}>
-          <SpeechRecognitionUI/>
-          <IonIcon className="close-icon" icon={closeOutline} onClick={() => setIsMicOpen(false)} />
+          <SpeechRecognitionUI />
+          <FontAwesomeIcon className="close-icon" icon={faTimes} onClick={() => setIsMicOpen(false)} />
         </IonModal>
       </IonContent>
     </IonApp>
