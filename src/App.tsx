@@ -23,17 +23,24 @@ import './theme/variables.css';
 
 /* Import setupIonicReact */
 import { setupIonicReact } from '@ionic/react';
+import SpeechRecognitionUI from './pages/MicPage/micpage';
 
 setupIonicReact(); // Initialize Ionic React
 
 const App: React.FC = () => {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isMicOpen, setIsMicOpen] = useState(false);
+  const [input, setInput] = useState('');
+  const [realInput, setRealInput] = useState('');
+
+  const handleSubmit = () => {
+    setRealInput(input)
+  }
 
   return (
     <IonApp>
       <IonContent>
-        <Home />
+        <Home realInput = {realInput}/>
 
         {/* Placeholder for the model with an image */}
         <div className="model-placeholder">
@@ -47,20 +54,20 @@ const App: React.FC = () => {
               <IonIcon icon={cameraOutline} />
             </IonButton>
           </div>
-          <div className="mic-icon-container">
+         { /*<div className="mic-icon-container">
             <IonButton onClick={() => setIsMicOpen(true)}>
               <IonIcon icon={micOutline} />
             </IonButton>
-          </div>
+          </div>*/}
         </div>
 
         {/* Bottom Input Box */}
         <div className="bottom-input-box">
-          <input type="text" placeholder="Enter text here..." />
+          <input type="text" placeholder="Enter text here..." onChange={(ev)=>setInput(ev.target.value)}/>
           
           {/* Arrow Button */}
-          <IonButton className="submit-button">
-            <IonIcon icon={sendOutline} />
+          <IonButton className="submit-button" onClick={handleSubmit}>
+            <IonIcon icon={sendOutline}/>
           </IonButton>
         </div>
 
@@ -72,7 +79,7 @@ const App: React.FC = () => {
 
         {/* Mic Modal */}
         <IonModal isOpen={isMicOpen} onDidDismiss={() => setIsMicOpen(false)}>
-          <MicPage />
+          <SpeechRecognitionUI/>
           <IonIcon className="close-icon" icon={closeOutline} onClick={() => setIsMicOpen(false)} />
         </IonModal>
       </IonContent>

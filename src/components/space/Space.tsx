@@ -1,10 +1,9 @@
-import React, { Suspense, useState, useEffect, useRef } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, isPlatform } from '@ionic/react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonInput, IonButton, isPlatform } from '@ionic/react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { useGLTF, OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import { useGLTF, OrbitControls, PerspectiveCamera, useAnimations } from '@react-three/drei';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import * as THREE from 'three';
-
 
 async function copyModelToDataDirectory() {
   if (isPlatform('android')) {
@@ -39,125 +38,193 @@ async function copyModelToDataDirectory() {
   }
 }
 
-function Model({ url }: { url: string }) {
-    const group = useRef<THREE.Group>();
-    const { scene } = useGLTF(url);
-  
-    useEffect(() => {
-      if (group.current) {
-        // Center the model
-        const box = new THREE.Box3().setFromObject(group.current);
-        const center = box.getCenter(new THREE.Vector3());
-        group.current.position.sub(center);
-  
-        // Scale the model to fit the view
-        const size = box.getSize(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z);
-        const scale = 2 / maxDim;
-        group.current.scale.multiplyScalar(scale);
-  
-        // Move the model up to show upper half
-        group.current.position.y = -size.y * scale * 0.7;
+function Model({ url, animationName, onAnimationComplete }: { url: string; animationName?: string; onAnimationComplete: () => void }) {
+  const group = useRef<THREE.Group>();
+  const { scene, animations } = useGLTF(url);
+  const { actions, names } = useAnimations(animations, group);
+
+  useEffect(() => {
+    if (group.current) {
+      const box = new THREE.Box3().setFromObject(group.current);
+      const center = box.getCenter(new THREE.Vector3());
+      group.current.position.sub(center);
+
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const scale = 2 / maxDim;
+      group.current.scale.multiplyScalar(scale);
+
+      group.current.position.y = -size.y * scale * 0.5;
     }
-    }, [scene]);
-  
-    useFrame((state) => {
-      if (group.current) {
-        // Optional: Add some subtle animation
-        group.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.1) * 0.1;
-      }
-    });
-  
-    return (
-      <group ref={group}>
-        <primitive object={scene} />
-      </group>
-    );
-  }
-  
-  const ModelViewer: React.FC = () => {
-    const [modelUrl, setModelUrl] = useState<string>('');
-    const [error, setError] = useState<string | null>(null);
-  
-    useEffect(() => {
-      async function loadModel() {
-        try {
-          if (isPlatform('android')) {
-            await copyModelToDataDirectory();
-            const result = await Filesystem.readFile({
-              path: 'newModel.glb',
-              directory: Directory.Data
-            });
-  
-            console.log('File read result:', result);
-            console.log('File data type:', typeof result.data);
-            console.log('File data length:', result.data.length);
-  
-            let buffer: ArrayBuffer;
-  
-            if (typeof result.data === 'string') {
-              // It's Base64 encoded, decode it
-              const base64 = result.data.split(',')[1] || result.data;
-              const binaryString = atob(base64);
-              const bytes = new Uint8Array(binaryString.length);
-              for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-              }
-              buffer = bytes.buffer;
-            } else {
-              // It's already binary data
-              buffer = result.data;
-            }
-  
-            const blob = new Blob([buffer], { type: 'model/gltf-binary' });
-            const url = URL.createObjectURL(blob);
-            setModelUrl(url);
+  }, [scene]);
+
+  useEffect(() => {
+    Object.values(actions).forEach(action => action.stop());
+
+    if (animationName && actions[animationName]) {
+      const action = actions[animationName];
+      action.reset().setLoop(THREE.LoopOnce, 1);
+      action.clampWhenFinished = true;
+      action.play();
+
+      action.getMixer().addEventListener('finished', onAnimationComplete);
+
+      return () => {
+        action.getMixer().removeEventListener('finished', onAnimationComplete);
+      };
+    }
+  }, [actions, animationName, onAnimationComplete]);
+
+  return (
+    <group ref={group}>
+      <primitive object={scene} />
+    </group>
+  );
+}
+
+interface SignLanguageAnimatorProps {
+  inputSentence: string;
+  onAnimationComplete?: () => void;
+}
+
+const SignLanguageAnimator: React.FC<SignLanguageAnimatorProps> = ({ inputSentence, onAnimationComplete }) => {
+  const [modelUrl, setModelUrl] = useState<string>('');
+  const [currentAnimation, setCurrentAnimation] = useState<string | null>(null);
+  const [animationQueue, setAnimationQueue] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadModel() {
+      try {
+        if (isPlatform('android')) {
+          await copyModelToDataDirectory();
+          const result = await Filesystem.readFile({
+            path: 'newModel.glb',
+            directory: Directory.Data
+          });
+
+          let buffer: ArrayBuffer;
+          if (typeof result.data === 'string') {
+            const base64 = result.data.split(',')[1] || result.data;
+            buffer = Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
           } else {
-            setModelUrl('/assets/newModel.glb');
+            buffer = result.data;
           }
-        } catch (error) {
-          console.error('Error loading model:', error);
-          setError('Failed to load 3D model. Please check console for details.');
+
+          const blob = new Blob([buffer], { type: 'model/gltf-binary' });
+          const url = URL.createObjectURL(blob);
+          setModelUrl(url);
+        } else {
+          setModelUrl('/assets/newModel.glb');
         }
+      } catch (error) {
+        console.error('Error loading model:', error);
+        setError('Failed to load 3D model. Please check console for details.');
       }
-      loadModel();
-    }, []);
-  
-    return (
-      <IonPage>
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle>3D Model Viewer</IonTitle>
-          </IonToolbar>
-        </IonHeader>
-        <IonContent fullscreen>
-          <div style={{ width: '100%', height: '100%' }}>
-            {error ? (
-              <div>{error}</div>
-            ) : modelUrl ? (
-              <Canvas>
-                <PerspectiveCamera makeDefault position={[0, 0, 3]} fov={40} />
-                <ambientLight intensity={0.5} />
-                <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
-                <pointLight position={[-10, -10, -10]} />
-                <Suspense fallback={null}>
-                  <Model url={modelUrl} />
-                </Suspense>
-                <OrbitControls 
-                  enablePan={false}
-                  minPolarAngle={Math.PI / 4}
-                  maxPolarAngle={Math.PI / 2}
-                  minDistance={2}
-                  maxDistance={4}
-                />
-              </Canvas>
-            ) : (
-              <div>Loading model...</div>
-            )}
-          </div>
-        </IonContent>
-      </IonPage>
-    );
+    }
+    loadModel();
+  }, []);
+
+  useEffect(() => {
+    console.log('Input sentence changed:', inputSentence);
+    if (inputSentence && modelUrl) {
+      const letters = inputSentence.toUpperCase().split('');
+      const validAnimations = letters.filter(letter => /[A-Z]/.test(letter));
+      console.log('Setting animation queue:', validAnimations);
+      setAnimationQueue(validAnimations);
+    }
+  }, [inputSentence, modelUrl]);
+
+  useEffect(() => {
+    console.log('Animation queue updated:', animationQueue);
+    if (animationQueue.length > 0 && !currentAnimation) {
+      playNextAnimation();
+    } else if (animationQueue.length === 0 && !currentAnimation) {
+      console.log('Animation sequence complete');
+      if (onAnimationComplete) {
+        onAnimationComplete();
+      }
+    }
+  }, [animationQueue, currentAnimation]);
+
+  const playNextAnimation = () => {
+    if (animationQueue.length > 0) {
+      const nextAnimation = animationQueue[0];
+      console.log('Playing animation:', nextAnimation);
+      setCurrentAnimation(nextAnimation);
+      setAnimationQueue(prevQueue => prevQueue.slice(1));
+    }
   };
-  
-  export default ModelViewer;
+
+  const handleAnimationComplete = () => {
+    console.log('Animation completed:', currentAnimation);
+    setCurrentAnimation(null);
+  };
+
+  return (
+    <IonPage>
+      <IonHeader>
+      </IonHeader>
+      <IonContent fullscreen>
+        <div style={{ padding: '50px', textAlign: 'center' }}>
+          <div>Current Animation: {currentAnimation || 'None'}</div>
+        </div>
+        <div style={{ width: '100%', height: '80%' }}>
+          {error ? (
+            <div>{error}</div>
+          ) : modelUrl ? (
+            <Canvas
+              onCreated={({ gl, scene }) => {
+                scene.background = new THREE.Color('#D1E9F6');
+                gl.setClearColor('#D1E9F6', 1);
+              }}
+            >
+              <PerspectiveCamera makeDefault position={[0, 1, 3]} fov={40} />
+              
+              {/* Ambient light for overall illumination */}
+              <ambientLight intensity={0.6} />
+              
+              {/* Main directional light (simulating sunlight) */}
+              <directionalLight
+                position={[5, 5, 5]}
+                intensity={0.7}
+                castShadow
+                shadow-mapSize-width={1024}
+                shadow-mapSize-height={1024}
+              />
+              
+              {/* Fill light from the opposite side */}
+              <directionalLight
+                position={[-5, 3, -5]}
+                intensity={0.4}
+                color="#9090ff"
+              />
+              
+              {/* Soft light from below for subtle highlights */}
+              <pointLight position={[0, -3, 0]} intensity={0.2} color="#ffcc77" />
+              
+              {/* Additional point lights for dynamic lighting */}
+              <pointLight position={[3, 2, 1]} intensity={0.3} color="#ffffff" />
+              <pointLight position={[-3, 2, 1]} intensity={0.3} color="#ffffff" />
+
+              <Suspense fallback={null}>
+                <Model url={modelUrl} animationName={currentAnimation || undefined} onAnimationComplete={handleAnimationComplete} />
+              </Suspense>
+              <OrbitControls 
+                enablePan={false}
+                minPolarAngle={Math.PI / 4}
+                maxPolarAngle={Math.PI / 2}
+                minDistance={2}
+                maxDistance={4}
+              />
+            </Canvas>
+          ) : (
+            <div>Loading model...</div>
+          )}
+        </div>
+      </IonContent>
+    </IonPage>
+  );
+};
+
+export default SignLanguageAnimator;

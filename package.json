@@ -31,6 +31,7 @@
     "@mediapipe/camera_utils": "^0.3.1675466862",
     "@mediapipe/drawing_utils": "^0.3.1675466124",
     "@mediapipe/hands": "^0.4.1675469240",
+    "@mediapipe/pose": "^0.5.1675469404",
     "@react-three/drei": "^9.112.0",
     "@react-three/fiber": "^8.17.7",
     "@types/react-router": "^5.1.20",

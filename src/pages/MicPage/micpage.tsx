@@ -1,128 +1,125 @@
-import React, { useState, useEffect } from 'react';
-import { IonContent, IonPage, IonText } from '@ionic/react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMicrophone, faStop } from '@fortawesome/free-solid-svg-icons';
-import { VoiceRecorder } from 'capacitor-voice-recorder';
+import React, { useState, useEffect, useRef } from 'react';
+import { IonContent, IonPage, IonButton, IonIcon, IonText, IonToast } from '@ionic/react';
+import { micOutline, stopCircleOutline } from 'ionicons/icons';
+import { Capacitor } from '@capacitor/core';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
-import './Mic.css';
+import { VoiceRecorder } from 'capacitor-voice-recorder';
 
-// Mock translation function
-const mockTranslate = (text: string): Promise<string> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // This is a very simplistic mock translation
-      const translated = text.split('').reverse().join('');
-      resolve(translated);
-    }, 500); // Simulate network delay
-  });
-};
-
-const Mic: React.FC = () => {
-  const [isActive, setIsActive] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [activeTime, setActiveTime] = useState(0);
+const SpeechRecognitionUI: React.FC = () => {
+  const [isListening, setIsListening] = useState(false);
   const [transcription, setTranscription] = useState('');
-  const [translation, setTranslation] = useState('');
-  const [mode, setMode] = useState<'record' | 'transcribe'>('record');
   const [status, setStatus] = useState('');
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  
+  const listenerSetup = useRef(false);
 
   useEffect(() => {
-    let interval: number;
-    if (isActive) {
-      interval = setInterval(() => {
-        setActiveTime((prevTime) => prevTime + 1);
-      }, 1000);
-    }
+    setupSpeechRecognition();
     return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isActive]);
-
-  useEffect(() => {
-    checkPermissions();
-    SpeechRecognition.addListener('speechRecognitionPartialResults', (result) => {
-      console.log('Partial result:', result);
-      setTranscription(result.matches[0]);
-    });
-    return () => {
-      SpeechRecognition.removeAllListeners();
+      cleanupSpeechRecognition();
     };
   }, []);
 
-  useEffect(() => {
-    if (transcription) {
-      console.log('Transcription updated:', transcription);
-      translateText(transcription);
-    }
-  }, [transcription]);
-
-  const checkPermissions = async () => {
-    const { available } = await SpeechRecognition.available();
-    if (available) {
-      const { state } = await SpeechRecognition.hasPermission();
-      if (state !== 'granted') {
-        await SpeechRecognition.requestPermission();
-      }
-    }
-  };
-
-  const formatTime = (timeInSeconds: number) => {
-    const minutes = Math.floor(timeInSeconds / 60);
-    const seconds = timeInSeconds % 60;
-    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  };
-
-  const toggleFunction = async () => {
-    if (isActive) {
-      if (mode === 'record') {
-        await stopRecording();
+  const setupSpeechRecognition = async () => {
+    try {
+      const { available } = await SpeechRecognition.available();
+      if (available) {
+        await requestPermissions();
+        if (!listenerSetup.current) {
+          SpeechRecognition.addListener('partialResults', handlePartialResults);
+          SpeechRecognition.addListener('start', handleStart);
+          SpeechRecognition.addListener('stop', handleStop);
+          SpeechRecognition.addListener('error', handleError);
+          SpeechRecognition.addListener('listeningState', handleListeningState);
+          listenerSetup.current = true;
+        }
       } else {
-        await stopSpeechRecognition();
+        setStatus('Speech recognition not available');
+        showToastMessage('Speech recognition is not available on this device');
       }
-      setIsActive(false);
-      setStatus('Stopped');
+    } catch (error) {
+      console.error('Error setting up speech recognition:', error);
+      setStatus('Error setting up speech recognition');
+      showToastMessage('Failed to set up speech recognition');
+    }
+  };
+
+  const cleanupSpeechRecognition = async () => {
+    if (listenerSetup.current) {
+      await SpeechRecognition.removeAllListeners();
+      listenerSetup.current = false;
+    }
+  };
+
+  const requestPermissions = async () => {
+    try {
+      await SpeechRecognition.requestPermission();
+      if (Capacitor.getPlatform() === 'android') {
+        await VoiceRecorder.requestAudioRecordingPermission();
+      }
+    } catch (error) {
+      console.error('Error requesting permissions:', error);
+      setStatus('Error requesting permissions');
+      showToastMessage('Failed to get necessary permissions');
+    }
+  };
+
+  const handlePartialResults = (result: { value: string[] }) => {
+    console.log('Partial results:', result);
+    if (result.value && result.value.length > 0) {
+      setTranscription(result.value[0]);
+    }
+  };
+
+  const handleStart = () => {
+    console.log('Speech recognition started');
+    setStatus('Listening started');
+    setIsListening(true);
+  };
+
+  const handleStop = () => {
+    console.log('Speech recognition stopped');
+    setStatus('Listening stopped');
+    setIsListening(false);
+    if (!transcription) {
+      showToastMessage('No speech detected. Please try again.');
+    }
+  };
+
+  const handleError = (error: any) => {
+    console.error('Speech recognition error:', error);
+    setIsListening(false);
+    if (error.message === 'No match') {
+      setStatus('No speech detected');
+      showToastMessage('No speech detected. Please try again.');
     } else {
-      setAudioUrl(null);
-      setTranscription('');
-      setTranslation('');
-      setActiveTime(0);
-      if (mode === 'record') {
-        await startRecording();
+      setStatus(`Error: ${error.message}`);
+      showToastMessage(`Speech recognition error: ${error.message}`);
+    }
+  };
+
+  const handleListeningState = (state: { isListening: boolean }) => {
+    console.log('Listening state changed:', state);
+    setIsListening(state.isListening);
+  };
+
+  const toggleListening = async () => {
+    try {
+      if (isListening) {
+        await stopListening();
       } else {
-        await startSpeechRecognition();
+        await startListening();
       }
-      setIsActive(true);
-      setStatus(mode === 'record' ? 'Recording' : 'Listening');
-    }
-  };
-
-  const startRecording = async () => {
-    try {
-      await VoiceRecorder.requestAudioRecordingPermission();
-      await VoiceRecorder.startRecording();
-      setStatus('Recording started');
     } catch (error) {
-      console.error('Error starting recording:', error);
-      setStatus('Error starting recording');
-      alert('Microphone access is required to record audio.');
+      console.error('Error toggling speech recognition:', error);
+      setStatus('Error toggling speech recognition');
+      showToastMessage('Failed to toggle speech recognition');
     }
   };
 
-  const stopRecording = async () => {
-    try {
-      const result = await VoiceRecorder.stopRecording();
-      const base64Sound = result.value.recordDataBase64;
-      const audioBlob = base64ToBlob(base64Sound, 'audio/wav');
-      const url = URL.createObjectURL(audioBlob);
-      setAudioUrl(url);
-      setStatus('Recording stopped');
-    } catch (error) {
-      console.error('Error stopping recording:', error);
-      setStatus('Error stopping recording');
-    }
-  };
-
-  const startSpeechRecognition = async () => {
+  const startListening = async () => {
+    setTranscription('');
     try {
       await SpeechRecognition.start({
         language: 'en-US',
@@ -131,103 +128,62 @@ const Mic: React.FC = () => {
         partialResults: true,
         popup: false,
       });
-      setStatus('Speech recognition started');
+      setStatus('Starting to listen...');
     } catch (error) {
       console.error('Error starting speech recognition:', error);
+      setIsListening(false);
       setStatus('Error starting speech recognition');
+      showToastMessage('Failed to start speech recognition');
     }
   };
 
-  const stopSpeechRecognition = async () => {
+  const stopListening = async () => {
     try {
       await SpeechRecognition.stop();
-      setStatus('Speech recognition stopped');
+      setStatus('Stopping listening...');
     } catch (error) {
       console.error('Error stopping speech recognition:', error);
       setStatus('Error stopping speech recognition');
+      showToastMessage('Failed to stop speech recognition');
     }
   };
 
-  const base64ToBlob = (base64: string, type: string) => {
-    const binaryString = window.atob(base64);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return new Blob([bytes], { type: type });
-  };
-
-  const translateText = async (text: string) => {
-    try {
-      const translatedText = await mockTranslate(text);
-      setTranslation(translatedText);
-      console.log('Translation updated:', translatedText);
-    } catch (error) {
-      console.error('Error translating text:', error);
-      setStatus('Error translating text');
-    }
+  const showToastMessage = (message: string) => {
+    setToastMessage(message);
+    setShowToast(true);
   };
 
   return (
     <IonPage>
       <IonContent className="ion-padding">
-        <div id="container">
-          <div className="mode-toggle">
-            <button 
-              onClick={() => setMode('record')} 
-              className={mode === 'record' ? 'active' : ''}
-            >
-              Record Audio
-            </button>
-            <button 
-              onClick={() => setMode('transcribe')} 
-              className={mode === 'transcribe' ? 'active' : ''}
-            >
-              Speech to Text
-            </button>
-          </div>
+        <div className="flex flex-col items-center justify-center h-full">
+          <IonButton
+            onClick={toggleListening}
+            className={`w-20 h-20 rounded-full ${isListening ? 'ion-color-danger' : 'ion-color-primary'}`}
+          >
+            <IonIcon icon={isListening ? stopCircleOutline : micOutline} className="text-4xl" />
+          </IonButton>
 
-          <div className="mic-container">
-            <button onClick={toggleFunction} className={`mic-button ${isActive ? 'stop' : ''}`}>
-              <FontAwesomeIcon icon={isActive ? faStop : faMicrophone} size="2x" color="#fff" />
-            </button>
-          </div>
-
-          <IonText color="medium">
+          <IonText color="medium" className="mt-4">
             <p>{status}</p>
           </IonText>
 
-          {isActive && (
-            <div className="timer">
-              {mode === 'record' ? 'Recording' : 'Listening'}: {formatTime(activeTime)}
-            </div>
-          )}
-
-          {mode === 'record' && audioUrl && (
-            <div className="audio-controls">
-              <audio controls src={audioUrl}></audio>
-            </div>
-          )}
-
-          <div className="text-output">
-            {transcription && (
-              <div className="transcription">
-                <h3>Transcription:</h3>
-                <p>{transcription}</p>
-              </div>
-            )}
-            {translation && (
-              <div className="translation">
-                <h3>Translation:</h3>
-                <p>{translation}</p>
-              </div>
-            )}
+          <div className="bg-gray-100 p-4 rounded-md mt-6 w-full max-w-md max-h-60 overflow-y-auto">
+            <IonText>
+              <p>{transcription}</p>
+            </IonText>
           </div>
         </div>
+
+        <IonToast
+          isOpen={showToast}
+          onDidDismiss={() => setShowToast(false)}
+          message={toastMessage}
+          duration={3000}
+        />
       </IonContent>
     </IonPage>
   );
 };
 
-export default Mic;
+export default SpeechRecognitionUI;

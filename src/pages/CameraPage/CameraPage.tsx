@@ -1,101 +1,100 @@
-import React, { useState, useEffect } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButton, IonIcon } from '@ionic/react';
-import { cameraOutline, closeOutline, videocamOutline, stopOutline } from 'ionicons/icons';
-import { CameraPreview, CameraPreviewOptions } from '@capacitor-community/camera-preview';
-import { Capacitor } from '@capacitor/core';
-import './Camera-page.css';
+import React, { useEffect, useRef, useState } from 'react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/react';
 
-const CameraPage: React.FC = () => {
-  const [cameraActive, setCameraActive] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
+declare global {
+  interface Window {
+    Pose: any;
+    Camera: any;
+    drawConnectors: any;
+    drawLandmarks: any;
+  }
+}
+
+const PoseDetection: React.FC = () => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const getBackCamera = async (): Promise<string | undefined> => {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+    // Typically, the back camera is the last in the list of video devices
+    const backCamera = videoDevices[videoDevices.length - 1];
+    return backCamera?.deviceId;
+  };
 
   useEffect(() => {
-    return () => {
-      if (cameraActive) {
-        stopCamera();
-      }
-    };
-  }, [cameraActive]);
+    const loadMediaPipeModules = async () => {
+      await import('@mediapipe/pose');
+      await import('@mediapipe/drawing_utils');
+      await import('@mediapipe/camera_utils');
+      
+      const { Pose } = window;
+      const { Camera } = window;
+      const { drawConnectors, drawLandmarks } = window;
 
-  const startCamera = async () => {
-    if (Capacitor.isNativePlatform()) {
-      const cameraPreviewOptions: CameraPreviewOptions = {
-        position: 'rear',
-        parent: 'camera-preview',
-        className: 'camera-preview',
-        toBack: false,
-        width: 300,
-        height: 400,
-        x: 45,
-        y: 95,
-        disableAudio: false,
-        enableHighResolution: true
+      if (!Pose || !Camera || !drawConnectors || !drawLandmarks) {
+        console.error('MediaPipe modules not loaded correctly');
+        return;
+      }
+
+      const pose = new Pose({
+        locateFile: (file) => {
+          return `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/${file}`;
+        }
+      });
+
+      pose.setOptions({
+        modelComplexity: 1,
+        smoothLandmarks: true,
+        enableSegmentation: false,
+        smoothSegmentation: false,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+
+      pose.onResults(onResults);
+
+      if (videoRef.current) {
+        const backCameraId = await getBackCamera();
+        const camera = new Camera(videoRef.current, {
+          onFrame: async () => {
+            if (videoRef.current) {
+              await pose.send({image: videoRef.current});
+            }
+          },
+          width: 1280,
+          height: 720,
+          facingMode: 'environment',
+          deviceId: backCameraId
+        });
+        camera.start().then(() => setIsLoading(false));
+      }
+
+      return () => {
+        pose.close();
       };
+    };
 
-      try {
-        await CameraPreview.start(cameraPreviewOptions);
-        setCameraActive(true);
-      } catch (error) {
-        console.error('Failed to start camera:', error);
-      }
-    } else {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        setVideoStream(stream);
-        const videoElement = document.getElementById('camera-preview-web') as HTMLVideoElement;
-        if (videoElement) {
-          videoElement.srcObject = stream;
-          videoElement.play();
-        }
-        setCameraActive(true);
-      } catch (error) {
-        console.error('Failed to start camera:', error);
-      }
-    }
-  };
+    loadMediaPipeModules();
+  }, []);
 
-  const stopCamera = async () => {
-    if (Capacitor.isNativePlatform()) {
-      try {
-        await CameraPreview.stop();
-      } catch (error) {
-        console.error('Failed to stop camera:', error);
-      }
-    } else {
-      if (videoStream) {
-        videoStream.getTracks().forEach(track => track.stop());
-        setVideoStream(null);
-      }
-    }
-    setCameraActive(false);
-  };
+  const onResults = (results: any) => {
+    const canvasElement = canvasRef.current;
+    const canvasCtx = canvasElement?.getContext('2d');
 
-  const toggleRecording = async () => {
-    if (Capacitor.isNativePlatform()) {
-      if (isRecording) {
-        try {
-          const result = await CameraPreview.stopRecording();
-          console.log('Recording stopped:', result);
-          setIsRecording(false);
-        } catch (error) {
-          console.error('Failed to stop recording:', error);
-        }
-      } else {
-        try {
-          await CameraPreview.startRecording({
-            quality: 'high',
-            width: 300,
-            height: 400,
-            maxDuration: 60000 // 1 minute
-          });
-          setIsRecording(true);
-        } catch (error) {
-          console.error('Failed to start recording:', error);
-        }
+    if (canvasElement && canvasCtx) {
+      canvasCtx.save();
+      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+      if (results.poseLandmarks) {
+        window.drawConnectors(canvasCtx, results.poseLandmarks, window.Pose.POSE_CONNECTIONS,
+                       {color: '#00FF00', lineWidth: 4});
+        window.drawLandmarks(canvasCtx, results.poseLandmarks,
+                      {color: '#FF0000', lineWidth: 2});
       }
-    } else {
-      console.log('Recording not implemented for web version');
+      canvasCtx.restore();
     }
   };
 
@@ -103,32 +102,16 @@ const CameraPage: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Camera Preview</IonTitle>
+          <IonTitle>Pose Detection</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        <div className="camera-container">
-          {Capacitor.isNativePlatform() ? (
-            <div id="camera-preview" className="camera-preview"></div>
-          ) : (
-            <video id="camera-preview-web" className="camera-preview" playsInline></video>
-          )}
-        </div>
-        <div className="camera-controls">
-          <IonButton onClick={cameraActive ? stopCamera : startCamera}>
-            <IonIcon icon={cameraActive ? closeOutline : cameraOutline} />
-            {cameraActive ? 'Stop Camera' : 'Start Camera'}
-          </IonButton>
-          {cameraActive && Capacitor.isNativePlatform() && (
-            <IonButton onClick={toggleRecording} color={isRecording ? 'danger' : 'success'}>
-              <IonIcon icon={isRecording ? stopOutline : videocamOutline} />
-              {isRecording ? 'Stop Recording' : 'Start Recording'}
-            </IonButton>
-          )}
-        </div>
+        {isLoading && <div>Loading...</div>}
+        <video ref={videoRef} style={{display: 'none'}}></video>
+        <canvas ref={canvasRef} width="1280" height="1400" style={{maxWidth: '100%', height: 'auto'}}></canvas>
       </IonContent>
     </IonPage>
   );
 };
 
-export default CameraPage;
+export default PoseDetection;
